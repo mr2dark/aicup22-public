@@ -5,6 +5,7 @@ setup(
     name='Hello world app',
     ext_modules=cythonize(
         [
+            "ext/model/player.pyx",
             "ext/simpleio.pyx",
             "ext/stream_wrapper.pyx",
         ],

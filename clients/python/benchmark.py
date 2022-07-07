@@ -1,3 +1,4 @@
+import importlib
 import io
 import os
 import sys
@@ -9,14 +10,15 @@ from pympler import asizeof
 import model
 
 import stream_wrapper
-# import ext.model
+import ext.model
+import ext.model.player
 import ext.stream_wrapper
 import ext.simpleio
-from references import REFERENCE_GAME
+from references import *
 
 # REFERENCE_BUILDING = model.Building(building_type=model.BuildingType.FARM, health=100, work_done=42,
 #                                 last_tick_tasks_done=420)
-TRANS_READ_FILENAME = "game.trans"
+# TRANS_READ_FILENAME = "game.trans"
 
 
 class TransObject(Protocol):
@@ -54,22 +56,28 @@ def assert_equal(b1, b2):
     # assert b1 == b2
     pass
 
+
+def type_name(typ):
+    return ".".join([typ.__module__, typ.__qualname__])
+
+
 def benchmark_reads(
         trans_object_type: Type[TransObject],
         sw_type,
         number: int = 1000,
-        trans_filename: str = TRANS_READ_FILENAME,
+        trans_filename: str = None,
 ):
-    print("Benchmarking reading for", ".".join([trans_object_type.__module__, trans_object_type.__qualname__]), "...")
+    print("Benchmarking reading for", type_name(trans_object_type), "with", type_name(sw_type), "...")
 
     with open(trans_filename, "rb") as fileobj:
         sw = sw_type(fileobj)
         trans_object = trans_object_type.read_from(sw)
-        assert_equal(trans_object, REFERENCE_GAME)
-        print("Object size (w/o nested)", sys.getsizeof(trans_object))
-        print("Object size (with nested)", asizeof.asizeof(trans_object))
-        # print("Repr:", repr(b))
-        # print("Str:", str(b))
+
+    assert_equal(trans_object, REFERENCE)
+    print("Object size (w/o nested)", sys.getsizeof(trans_object))
+    print("Object size (with nested)", asizeof.asizeof(trans_object))
+    print("Repr:", repr(trans_object))
+    print("Str:", str(trans_object))
 
     print("Checking io.FileIO")
     with open(trans_filename, "rb") as fileobj:
@@ -127,25 +135,25 @@ def benchmark_writes(
         sw_type,
         number: int = 1000,
 ):
+    trans_object_type = type(trans_object)
+    print("Benchmarking writing for", type_name(trans_object_type), "with", type_name(sw_type), "...")
     print("Object size (w/o nested)", sys.getsizeof(trans_object))
     print("Object size (with nested)", asizeof.asizeof(trans_object))
-    # print("Repr:", repr(trans_object))
-    # print("Str:", str(trans_object))
-    trans_object_type = type(trans_object)
-    print("Benchmarking writing for", ".".join([trans_object_type.__module__, trans_object_type.__qualname__]), "...")
+    print("Repr:", repr(trans_object))
+    print("Str:", str(trans_object))
 
     fileobj = tempfile.NamedTemporaryFile(delete=False)
     filename = fileobj.name
     trans_object.write_to(sw_type(fileobj))
     fileobj.flush()
     fileobj.close()
+    bin_size = os.path.getsize(filename)
 
     with open(filename, "rb") as fileobj:
         sw = stream_wrapper.StreamWrapper(fileobj)
-        b = model.Game.read_from(sw)
-        assert_equal(b, REFERENCE_GAME)
+        trans_obj = REF_TYPE.read_from(sw)
+        assert_equal(trans_obj, REFERENCE)
 
-    bin_size = os.path.getsize(filename)
 
     os.unlink(filename)
 
@@ -162,22 +170,38 @@ def benchmark_writes(
     benchmark_trans_object_type_write(trans_object, stream=mem_stream, sw_type=sw_type, number=number)
 
 
+def alt_clone(obj):
+    obj_str = str(obj)
+    alt_obj_str = "ext.model.player." + obj_str
+    alt_obj = eval(alt_obj_str)
+    return alt_obj
+
+
 if __name__ == "__main__":
-    REFERENCE = REFERENCE_GAME
-    ref_class = type(REFERENCE)
-    number = 1000
+    TRANS_READ_FILENAME = "player.trans"
+    number = 1000000
+    REFERENCE = REFERENCE_PLAYER
+
+    REF_TYPE = type(REFERENCE)
+    REF_MODULE = REF_TYPE.__module__
+    importlib.import_module(f"ext.{REF_MODULE}")
+    alt_type_name = f"ext.{type_name(REF_TYPE)}"
+    alt_type = eval(alt_type_name)
+    alt_obj = alt_clone(REFERENCE)
     if not os.path.exists(TRANS_READ_FILENAME):
-        obj = REFERENCE_GAME
+        obj = REFERENCE
         dump_trans_object(obj, TRANS_READ_FILENAME, number=number)
     # if not os.path.exists(TRANS_READ_FILENAME):
     #     if os.path.exists(TRANS_READ_FILENAME):
     #     building = REFERENCE_BUILDING
     #     dump_trans_object(building, TRANS_READ_FILENAME, number=number)
 
-    benchmark_reads(ref_class, sw_type=stream_wrapper.StreamWrapper, number=number, trans_filename=TRANS_READ_FILENAME)
-    benchmark_reads(ref_class, sw_type=ext.stream_wrapper.StreamWrapper, number=number, trans_filename=TRANS_READ_FILENAME)
+    benchmark_reads(REF_TYPE, sw_type=stream_wrapper.StreamWrapper, number=number, trans_filename=TRANS_READ_FILENAME)
+    benchmark_reads(REF_TYPE, sw_type=ext.stream_wrapper.StreamWrapper, number=number, trans_filename=TRANS_READ_FILENAME)
+    benchmark_reads(alt_type, sw_type=ext.stream_wrapper.StreamWrapper, number=number, trans_filename=TRANS_READ_FILENAME)
 
     benchmark_writes(REFERENCE, sw_type=stream_wrapper.StreamWrapper, number=number)
     benchmark_writes(REFERENCE, sw_type=ext.stream_wrapper.StreamWrapper, number=number)
+    benchmark_writes(alt_obj, sw_type=ext.stream_wrapper.StreamWrapper, number=number)
     # building_ext = ext.model.Building(REFERENCE_BUILDING.building_type, REFERENCE_BUILDING.health, REFERENCE_BUILDING.work_done, REFERENCE_BUILDING.last_tick_tasks_done)
     # benchmark_writes(building_ext, sw_type=ext.stream_wrapper2.StreamWrapper, number=number)

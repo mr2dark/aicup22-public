@@ -1,10 +1,12 @@
 from codegame.server_message import ServerMessage
 from codegame.client_message import ClientMessage
-from stream_wrapper import StreamWrapper
+from ext.stream_wrapper import StreamWrapper
 from my_strategy import MyStrategy
 from debug_interface import DebugInterface
 import socket
 import sys
+
+from model import Game
 
 
 class Runner:
@@ -30,6 +32,12 @@ class Runner:
             if isinstance(message, ServerMessage.UpdateConstants):
                 strategy = MyStrategy(message.constants)
             elif isinstance(message, ServerMessage.GetOrder):
+                with open("game.trans.one", "wb") as fileobj:
+                    writer = StreamWrapper(fileobj)
+                    game: Game = message.player_view
+                    game.write_to(writer)
+                    # print(game)
+                    # exit(1)
                 order = strategy.get_order(message.player_view, debug_interface if message.debug_available else None)
                 ClientMessage.OrderMessage(order).write_to(self.writer)
                 self.writer.flush()
