@@ -1,1 +1,6 @@
 /dist/
+*.c
+*.so
+*.html
+/*.trans
+/*.trans.*
