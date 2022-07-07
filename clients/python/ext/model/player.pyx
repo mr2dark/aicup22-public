@@ -2,7 +2,7 @@
 cimport cython
 from ext.stream_wrapper cimport StreamWrapper
 
-@cython.freelist(100)
+@cython.freelist(120)
 @cython.no_gc
 cdef class Player:
     """Game's participant (team of units)"""

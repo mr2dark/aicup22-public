@@ -1,6 +1,7 @@
 from model import *
 
 REFERENCE_PLAYER = Player(11777, 1, 240.0, 99, 860.0)
+REFERENCE_SOUND = Sound(1, 11777, Vec2(0.6456747317285294, -3.012041012168762))
 
 REFERENCE_GAME = Game(11690, [Player(11690, 0, 40.0, 99, 460.0), Player(11691, 0, 90.0, 118, 130.0),
                               Player(11692, 0, 100.0, 120, 100.0), Player(11693, 0, 20.0, 99, 440.0),
@@ -98,7 +99,8 @@ REFERENCE_GAME = Game(11690, [Player(11690, 0, 40.0, 99, 460.0), Player(11691, 0
 
 __all__ = (
     "REFERENCE_GAME",
-    "REFERENCE_PLAYER"
+    "REFERENCE_PLAYER",
+    "REFERENCE_SOUND",
 )
 
 if __name__ == "__main__":

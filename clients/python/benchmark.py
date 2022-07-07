@@ -170,17 +170,25 @@ def benchmark_writes(
     benchmark_trans_object_type_write(trans_object, stream=mem_stream, sw_type=sw_type, number=number)
 
 
-def alt_clone(obj):
-    obj_str = str(obj)
-    alt_obj_str = "ext.model.player." + obj_str
-    alt_obj = eval(alt_obj_str)
-    return alt_obj
+ALT_TYPE_MAPPING = {
+    "Player": "ext.model.player.Player",
+    "Sound": "ext.model.sound.Sound",
+    "Vec2": "ext.model.vec2.Vec2",
+}
+
+
+def alt_clone(ob):
+    alt_obj_str = str(ob)
+    for typ, alt_typ in ALT_TYPE_MAPPING.items():
+        alt_obj_str = alt_obj_str.replace(typ, alt_typ)
+    alt_object = eval(alt_obj_str)
+    return alt_object
 
 
 if __name__ == "__main__":
-    TRANS_READ_FILENAME = "player.trans"
+    TRANS_READ_FILENAME = "sound.trans"
     number = 1000000
-    REFERENCE = REFERENCE_PLAYER
+    REFERENCE = REFERENCE_SOUND
 
     REF_TYPE = type(REFERENCE)
     REF_MODULE = REF_TYPE.__module__
