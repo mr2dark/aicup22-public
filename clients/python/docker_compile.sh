@@ -47,9 +47,9 @@ cp "${CONTAINER_FILES[@]}" "${WORKDIR}/solution"
     --mount type=bind,source="${WORKDIR}/solution",target="${SOLUTION_CODE_PATH}" \
     --mount type=bind,source="${WORKDIR}/compile_logs",target="/compile_logs" \
     --mount type=bind,source="${WORKDIR}/tmp",target="/tmp" \
-  "${CONTAINER_IMAGE_NAME}" \
+  "${CONTAINER_IMAGE_NAME}" bash -c "bash entrypoint.sh && cp \$(jq -r '.path_to_compiled_file' \${COMPILE_LOG_LOCATION}) /tmp/compiled" \
   | tee "${WORKDIR}/compile_logs/compile.log"
 
 echo "You can find compilation log files: ${WORKDIR}/compile_logs"
-cp "${WORKDIR}/tmp/${PROJECT_NAME}.zip" "${SOLUTION_ARCHIVE_COMPILED}"
+cp "${WORKDIR}/tmp/compiled" "${SOLUTION_ARCHIVE_COMPILED}"
 echo "You can find the compiled artifact at: ${SOLUTION_ARCHIVE_COMPILED}"
