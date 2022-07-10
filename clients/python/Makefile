@@ -22,7 +22,8 @@ VERSIONS_PATH ?= releases
 VERSIONS_PREFIX ?= mr2dark_
 
 #archive_contents := $(shell find . "(" -not -path "./target/**" ")" -and "(" -name "*.rs" -or -name "*.toml" ")"  )
-archive_contents := $(shell find . "(" -name "*.py" ")"  )
+archive_contents := $(shell find . "(" -name "*.py" -or -name "*.pyx" -or -name "*.pxd" ")")
+$(info Archive contents: $(archive_contents))
 player_nums := $(shell seq 1 $(SLOTS))
 play_vs_qs_targets := $(player_nums:%=play_vs_qs/%)
 version_combos := 9/1 9/2 9/3 9/4 10/1 10/2 10/3 10/4 11/1 11/2 11/3 11/4 12/1 12/2 12/3 12/4 13/1 13/2 13/3 13/4
