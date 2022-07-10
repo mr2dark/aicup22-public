@@ -31,10 +31,11 @@ play_vs_version_targets := $(version_combos:%=play_vs_v%)
 
 .PHONY: all play_vs_qs_targets
 
-all: dist/archive.zip
+all: dist/$(VERSIONS_PREFIX)X.zip
 
-dist/archive.zip: $(archive_contents)
+dist/$(VERSIONS_PREFIX)X.zip: $(archive_contents)
 	mkdir -p $(@D)
+	rm -rf "$@"
 	zip -r "$@" $(archive_contents)
 
 $(RELEASE_PATH): $(archive_contents)
