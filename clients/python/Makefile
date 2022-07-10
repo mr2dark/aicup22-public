@@ -15,8 +15,12 @@ export RUST_BACKTRACE := full
 # The path to a built agent binary (relative to the current folder)
 RELEASE_PATH ?= target/release/aicup2020
 RUN_COMMAND ?= pipenv run python main.py
+
+RUNNER_RELEASE_URL_BASE = https://github.com/All-Cups/aicup22/releases
+RUNNER_VERSION ?= latest
+RUNNERS_ROOT ?= $(HOME)/Downloads/raic22-macos
 # The path to a local runner binary (absolute or relative to the current folder)
-RUNNER_PATH ?= ../../app-macos/aicup22
+RUNNER_PATH ?= $(RUNNERS_ROOT)/$(RUNNER_VERSION)/aicup22
 # The path to a built versions binaries (relative to the current folder)
 VERSIONS_PATH ?= releases
 VERSIONS_PREFIX ?= mr2dark_
@@ -65,3 +69,29 @@ $(play_vs_version_targets): play_vs_v%: $(RELEASE_PATH)
 			& { sleep 1 && echo "$${PORTS}" | tail -n +$$(($(lastword $(subst /, ,$*))+1))  | xargs -P5 -n1 -t $(VERSIONS_PATH)/$(VERSIONS_PREFIX)$(firstword $(subst /, ,$*)) "$(HOST)" ;} \
 		;} \
 		&& rm "$${TMP_FILE}"
+
+upgrade_runner_version:
+	mkdir -p "$(RUNNERS_ROOT)"
+	basename $$(curl -fs -o/dev/null -w %{redirect_url} $(RUNNER_RELEASE_URL_BASE)/latest) > "$(RUNNERS_ROOT)/latest_version.txt"
+	{ \
+		export VERSION="$$(cat "$(RUNNERS_ROOT)/latest_version.txt")" && \
+		export RUNNER_LATEST_DIR="$(RUNNERS_ROOT)/$$VERSION" && \
+		echo "$${RUNNER_LATEST_DIR}" && \
+		test -d "$${RUNNER_LATEST_DIR}" && \
+			ls -lhsa "$${RUNNER_LATEST_DIR}" && \
+			>&2 echo "You're already using the latest version of the runner" \
+		|| { \
+			export TMP_FILE="$$(mktemp /tmp/aicup2022.tar.gz.XXXXXX)" && \
+			echo "$${TMP_FILE}" && \
+			curl -L "$(RUNNER_RELEASE_URL_BASE)/download/$${VERSION}/app-macos.tar.gz" -o "$${TMP_FILE}" && \
+ 			ls -lhsa "$${TMP_FILE}" && \
+			mkdir -p "$${RUNNER_LATEST_DIR}" && \
+			tar -xzf "$${TMP_FILE}" -C "$${RUNNER_LATEST_DIR}" && \
+ 			ls -lhsa "$${RUNNER_LATEST_DIR}" && \
+			rm -f "$(RUNNERS_ROOT)/latest" && \
+			ln -s "./$$(basename "$${RUNNER_LATEST_DIR}")" "$(RUNNERS_ROOT)/latest" && \
+			ls -lhsa "$(RUNNERS_ROOT)" \
+		;} \
+	;}
+
+$(RUNNER_PATH):
