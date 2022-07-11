@@ -3,10 +3,11 @@ set -euo pipefail
 
 SOLUTION_ARCHIVE="$1"
 [ -f "${SOLUTION_ARCHIVE}" ] || echo "Argument must be a path to solution archive file"
+ZIPPED="${ZIPPED:-True}"
 SOLUTION_ARCHIVE_COMPILED="${2:-"${SOLUTION_ARCHIVE}.compiled"}"
 
-CONTAINER_BUILDER="${CONTAINER_BUILDER:-docker}"
-CONTAINER_RUNNER="${CONTAINER_RUNNER:-${CONTAINER_BUILDER}}"
+CONTAINER_RUNNER="${CONTAINER_RUNNER:-docker}"
+CONTAINER_BUILDER="${CONTAINER_BUILDER:-${CONTAINER_RUNNER}}"
 CONTAINER_FILES=(Dockerfile entrypoint.sh)
 
 LANG_CODE="$(basename "$(pwd)")"
@@ -35,21 +36,21 @@ echo "Compile working dir is ${WORKDIR}"
 mkdir -p "${WORKDIR}/solution"
 mkdir -p "${WORKDIR}/compile_logs"
 mkdir -p "${WORKDIR}/tmp"
-cp "${SOLUTION_ARCHIVE}" "${WORKDIR}/archive.zip"
+cp "${SOLUTION_ARCHIVE}" "${WORKDIR}/solution_artifact"
 cp "${CONTAINER_FILES[@]}" "${WORKDIR}/solution"
 "${CONTAINER_RUNNER}" run -it --rm \
     -e COMPILE="True" \
-    -e ZIPPED="True" \
+    -e ZIPPED="${ZIPPED}" \
     -e MOUNT_POINT="${MOUNT_POINT}" \
     -e SOLUTION_CODE_PATH="${SOLUTION_CODE_PATH}" \
     -e COMPILE_LOG_LOCATION="/compile_logs/compile_result.json" \
-    --mount type=bind,source="${WORKDIR}/archive.zip",target="${MOUNT_POINT}" \
+    --mount type=bind,source="${WORKDIR}/solution_artifact",target="${MOUNT_POINT}" \
     --mount type=bind,source="${WORKDIR}/solution",target="${SOLUTION_CODE_PATH}" \
     --mount type=bind,source="${WORKDIR}/compile_logs",target="/compile_logs" \
     --mount type=bind,source="${WORKDIR}/tmp",target="/tmp" \
   "${CONTAINER_IMAGE_NAME}" bash -c "bash entrypoint.sh && cp \$(jq -r '.path_to_compiled_file' \${COMPILE_LOG_LOCATION}) /tmp/compiled" \
   | tee "${WORKDIR}/compile_logs/compile.log"
 
-echo "You can find compilation log files: ${WORKDIR}/compile_logs"
+echo "You can find compilation log files at: ${WORKDIR}/compile_logs"
 cp "${WORKDIR}/tmp/compiled" "${SOLUTION_ARCHIVE_COMPILED}"
 echo "You can find the compiled artifact at: ${SOLUTION_ARCHIVE_COMPILED}"
