@@ -28,7 +28,7 @@ VERSIONS_PATH ?= releases
 VERSIONS_PREFIX ?= mr2dark_
 
 #archive_contents := $(shell find . "(" -not -path "./target/**" ")" -and "(" -name "*.rs" -or -name "*.toml" ")"  )
-archive_contents := $(shell find . "(" -name "*.py" -or -name "*.pyx" -or -name "*.pxd" ")")
+archive_contents := $(shell find . "(" -name "*.cpp" -or -name "*.hpp" ")") CMakeLists.txt
 $(info Archive contents: $(archive_contents))
 player_nums := $(shell seq 1 $(SLOTS))
 play_vs_qs_targets := $(player_nums:%=play_vs_qs/%)
@@ -109,3 +109,10 @@ upgrade_runner_version:
 			ls -lhsa "$(RUNNERS_ROOT)" \
 		;} \
 	;}
+
+docker_compile: $(ARCHIVE_PATH) $(CONTAINER_FILES)
+	export WORKDIR="$$(mktemp /tmp/aicup2022_build.XXXXXX)" \
+		&& mkdir -p "${WORKDIR}" \
+		&& cp "@<" "${WORKDIR}/archive.zip" \
+		&& cp $(CONTAINER_FILES) "${WORKDIR}/" \
+		&& $(CONTAINER_BUILDER) build
