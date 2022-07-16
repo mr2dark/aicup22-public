@@ -29,13 +29,15 @@ PROJECT_NAME="${PROJECT_NAME:-ai_cup_22}"
 MOUNT_POINT="/opt/mount-point"
 SOLUTION_CODE_PATH="/opt/client/solution"
 
-export WORKDIR="$(mktemp -d /tmp/aicup2022_run.XXXXXX)"
+export WORKDIR="${WORKDIR:-$(mktemp -d /tmp/aicup2022_run.XXXXXX)}"
 echo "Run working dir is ${WORKDIR}"
 mkdir -p "${WORKDIR}/solution"
 mkdir -p "${WORKDIR}/tmp"
 cp "${SOLUTION_ARCHIVE_COMPILED}" "${WORKDIR}/solution_artifact"
 cp "${CONTAINER_FILES[@]}" "${WORKDIR}/solution"
 "${CONTAINER_RUNNER}" run -it --rm \
+    --memory=1g \
+    --cpus=1 \
     --add-host=host.docker.internal:host-gateway \
     --net=host \
     -e MOUNT_POINT="${MOUNT_POINT}" \
@@ -45,6 +47,6 @@ cp "${CONTAINER_FILES[@]}" "${WORKDIR}/solution"
     --mount type=bind,source="${WORKDIR}/solution_artifact",target="${MOUNT_POINT}" \
     --mount type=bind,source="${WORKDIR}/solution",target="${SOLUTION_CODE_PATH}" \
     --mount type=bind,source="${WORKDIR}/tmp",target="/tmp" \
-  "${CONTAINER_IMAGE_NAME}" bash -c "bash entrypoint.sh"
+  "${CONTAINER_IMAGE_NAME}" bash -c "printenv > /tmp/env; time bash entrypoint.sh 2> /tmp/stderr | tee /tmp/stdout"
 
 echo "You can find run files at: ${WORKDIR}/tmp"
